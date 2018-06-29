@@ -1,6 +1,6 @@
 """ Sum two integers """
-def sum(a,b):
+def summarize(a,b):
     return a + b
 
 if __name__ == '__main__':
-    print(sum(45,200))
+    print(summarize(45,200))
