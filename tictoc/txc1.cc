@@ -14,6 +14,8 @@ protected:
     // The following redefined virtual function holds the algorithm.
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
+private:
+    int counter;  // Note the counter here
 };
 
 // The module class needs to be registered with OMNeT++
@@ -33,15 +35,30 @@ void Txc1::initialize()
         EV << "Sending initial message\n";
         send(msg, "out");
     }
+
+    // Initialize counter to ten. We'll decrement it every time and delete
+    // the message when it reaches zero.
+    counter = 10;
+
+    // The WATCH() statement below will let you examine the variable in GUI.
+    WATCH(counter);
 }
 
 void Txc1::handleMessage(cMessage *msg)
 {
-    // The handleMessage() method is called whenever a message arrives
-    // at the module. Here, we just send it to the other module, through
-    // gate `out'. Because both `tic' and `toc' does the same, the message
-    // will bounce between the two.
-    EV << "Received message `" << msg->getName() << "', sending it out again\n";
-    send(msg, "out");  // send out the message
+    counter--;
+    if (counter == 0) {
+        // If counter is zero, delete message. If you run the model, you'll
+        // find that the simulation will stop at this point with the message
+        // "no more events"
+        EV << getName() << "'s counter reached zero, deleting message\n";
+        delete msg;
+    } else {
+        // Here, we just send it to the other module, through
+        // gate `out'. Because both `tic' and `toc' does the same, the message
+        // will bounce between the two.
+        EV << getName() << "'s counter is " << counter << ", sending back message\n";
+        send(msg, "out");  // send out the message
+    }
 }
 
