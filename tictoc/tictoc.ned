@@ -1,4 +1,4 @@
-simple Txc1 {
+simple Txc {
     parameters:
         @display("i=block/routing");  // add a default icon
     gates:
@@ -11,13 +11,13 @@ simple Txc1 {
 // Two instances (tic and toc) of Txc1 connected both ways.
 // Tic and toc will pass messages to one another.
 //
-network Tictoc1 {
+network Tictoc {
     submodules:
-        tic: Txc1 {
+        tic: Txc {
             parameters:
                 @display("i=,cyan");  // do not change the icon (first arg of i=) just colorize it
         }
-        toc: Txc1 {
+        toc: Txc {
             parameters:
                 @display("i=,gold");  // here too
         }

@@ -4,11 +4,11 @@
 using namespace omnetpp;
 
 /**
- * Derive the Txc1 class from cSimpleModule. In the Tictoc1 network,
- * both the `tic' and `toc' modules are Txc1 objects, created by OMNeT++
+ * Derive the Txc class from cSimpleModule. In the Tictoc1 network,
+ * both the `tic' and `toc' modules are Txc objects, created by OMNeT++
  * at the beginning of the simulation.
  */
-class Txc1 : public cSimpleModule
+class Txc : public cSimpleModule
 {
 protected:
     // The following redefined virtual function holds the algorithm.
@@ -19,9 +19,9 @@ private:
 };
 
 // The module class needs to be registered with OMNeT++
-Define_Module(Txc1);
+Define_Module(Txc);
 
-void Txc1::initialize()
+void Txc::initialize()
 {
     // Initialize is called at the beginning of the simulation.
     // To bootstrap the tic-toc-tic-toc process, one of the modules needs
@@ -44,7 +44,7 @@ void Txc1::initialize()
     WATCH(counter);
 }
 
-void Txc1::handleMessage(cMessage *msg)
+void Txc::handleMessage(cMessage *msg)
 {
     counter--;
     if (counter == 0) {
