@@ -28,7 +28,7 @@ void Txc::initialize()
     // to send the first message. Let this be `tic'.
 
     // Am I Tic or Toc?
-    if (strcmp("tic", getName()) == 0) {
+    if (par("sendMsgOnInit").boolValue() == true) {
         // Create and send the first message on gate "out". "tictocMsg" is an
         // arbitrary string which will be the name of the message object.
         cMessage *msg = new cMessage("tictocMsg");
@@ -36,9 +36,9 @@ void Txc::initialize()
         send(msg, "out");
     }
 
-    // Initialize counter to ten. We'll decrement it every time and delete
+    // Initialize counter. We'll decrement it every time and delete
     // the message when it reaches zero.
-    counter = 10;
+    counter = par("limit");
 
     // The WATCH() statement below will let you examine the variable in GUI.
     WATCH(counter);
