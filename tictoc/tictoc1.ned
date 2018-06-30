@@ -1,4 +1,6 @@
 simple Txc1 {
+    parameters:
+        @display("i=block/routing");  // add a default icon
     gates:
         input in;
         output out;
@@ -11,8 +13,14 @@ simple Txc1 {
 //
 network Tictoc1 {
     submodules:
-        tic: Txc1;
-        toc: Txc1;
+        tic: Txc1 {
+            parameters:
+                @display("i=,cyan");  // do not change the icon (first arg of i=) just colorize it
+        }
+        toc: Txc1 {
+            parameters:
+                @display("i=,gold");  // here too
+        }
     connections:
         tic.out --> { delay = 100ms; } --> toc.in;
         tic.in <-- { delay = 100ms; } <-- toc.out;
