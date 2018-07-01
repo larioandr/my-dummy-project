@@ -4,110 +4,153 @@
 using namespace omnetpp;
 
 /**
- * Derive the Txc class from cSimpleModule. In the Tictoc1 network,
- * both the `tic' and `toc' modules are Txc objects, created by OMNeT++
- * at the beginning of the simulation.
+ * Tic module will generate messages and send them to Toc, which will
+ * process or lose them.
  */
-class Txc : public cSimpleModule
+class Tic : public cSimpleModule
 {
 public:
-    Txc();
-    virtual ~Txc();
+    Tic();
+    virtual ~Tic();
 protected:
-    // The following redefined virtual functions holds the algorithm.
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
 private:
     int counter;  // Note the counter here
-    cMessage *event;  // pointer to the event object which we'll use for timing
-    cMessage *tictocMsg;  // variable to remember the message until sent it
+    simtime_t  timeout;  // wait reply timeout duration
+    cMessage *timeoutEvent;  // wait reply timeout event
 };
 
 // The module class needs to be registered with OMNeT++
-Define_Module(Txc);
+Define_Module(Tic);
 
-Txc::Txc()
+Tic::Tic()
 {
     // Set the pointer to nullptr, so that the destructor won't crash
     // even if initialize() doesn't get called because of a runtime
     // error or user cancellation during the startup process.
-    event = tictocMsg = nullptr;
+    timeoutEvent = nullptr;
 }
 
-Txc::~Txc()
+Tic::~Tic()
 {
     // Dispose of dynamically allocated objects
-    cancelAndDelete(event);
-    delete tictocMsg;
+    cancelAndDelete(timeoutEvent);
 }
 
-void Txc::initialize()
+void Tic::initialize()
 {
-    // Create the event object we'll use for delay modeling. Also nullptr the
-    // tictocMsg object since we haven't received or sent any yet
-    event = new cMessage("event");
-    tictocMsg = nullptr;
+    // Initialize counter. We'll decrement it every time and stop generation
+    // when it reaches zero.
+    counter = par("limit");
+    WATCH(counter);
 
-    // Am I Tic or Toc?
-    if (par("sendMsgOnInit").boolValue() == true) {
-        // We don't start right away, but instead send a message to ourselves
-        // (a `self-message') -- we'll do the first sending when it arrives
-        // back to us, at t=5.0s simulated time.
-        EV << "Scheduling first send to t=5.0s\n";
-        tictocMsg = new cMessage("tictocMsg");
-        scheduleAt(5.0, event);
+    // Create the event object we'll use for timeout modeling.
+    timeoutEvent = new cMessage("timeoutEvent");
+
+    // Generate and send initial message
+    EV << "Scheduling first send to t=5.0s\n";
+    cMessage *msg = new cMessage("tictocMsg");
+    send(msg, "out");
+    counter--;
+
+    // Set wait timeout
+    timeout = par("timeout");
+    scheduleAt(simTime() + timeout, timeoutEvent);
+}
+
+void Tic::handleMessage(cMessage *msg)
+{
+    if (msg == timeoutEvent) {
+        // If we receive the timeout event, that means the packet hasn't
+        // arrived in time and we have to re-send it.
+        EV << "Timeout expired, resending message and restarting timer\n";
+    }
+    else { // message arrived
+        // Acknowledgement received -- delete the received message and cancel
+        // the timeout event
+        EV << "Timer cancelled\n";
+        cancelEvent(timeoutEvent);
+        delete msg;
     }
 
-    // Initialize counter. We'll decrement it every time and delete
-    // the message when it reaches zero.
-    counter = par("limit");
-
-    // The WATCH() statement below will let you examine the variable in GUI.
-    WATCH(counter);
+    // Building new message, sending it and re-setting timeout event.
+    if (counter > 0) {
+        cMessage *newMsg = new cMessage("tictocMsg");
+        send(newMsg, "out");
+        scheduleAt(simTime() + timeout, timeoutEvent);
+        counter--;
+    }
+    else { // counter reached zero
+        EV << "Counter reached zero.\n";
+    }
 }
 
-void Txc::handleMessage(cMessage *msg)
+/**
+ * Sends back and acknowledgement -- or not.
+ */
+class Toc : public cSimpleModule {
+  public:
+    Toc();
+    virtual ~Toc();
+  protected:
+    virtual void initialize() override;
+    virtual void handleMessage(cMessage *msg) override;
+  private:
+    cMessage *delayEvent;  // a processing delay timer
+    cMessage *tictocMsg;  // a cached request
+    double loseProb;  // probability to `lose' a message
+};
+
+Define_Module(Toc);
+
+Toc::Toc()
 {
-    if (msg == event) {
-        // The self-message arrived, so we can send out tictocMsg
-        EV << "Wait period is over, sending back message\n";
+    delayEvent = tictocMsg = nullptr;
+}
 
-        if (counter == 0) {
-            // If counter is zero, delete message. If you run the model, you'll
-            // find that the simulation will stop at this point with the message
-            // "no more events"
-            EV << getName() << "'s counter reached zero, deleting message\n";
-            delete tictocMsg;
-        } 
-        else {
-            // Here, we just send it to the other module, through
-            // gate `out'. Because both `tic' and `toc' does the same, the message
-            // will bounce between the two.
-            EV << getName() << "'s counter is " << counter << ", sending back message\n";
-            send(tictocMsg, "out");  // send out the message
-        }
+Toc::~Toc()
+{
+    delete tictocMsg;
+    cancelAndDelete(delayEvent);
+}
 
-        // nullptr out tictocMsg so that it doesn't confuse us later
+void Toc::initialize()
+{
+    // Reading NED parameters
+    loseProb = par("loseProb");
+
+    // Initializing events and message cache
+    delayEvent = new cMessage("delayEvent");
+    tictocMsg = nullptr;
+}
+
+void Toc::handleMessage(cMessage *msg)
+{
+    if (msg == delayEvent) {
+        // If processing finished, send the message back.
+        EV << "Sending back the same message as acknowledgement.\n";
+        send(tictocMsg, "out");
         tictocMsg = nullptr;
-    } 
-    else {
-        // If the message we received is not our self-message, then it must be
-        // the tic-toc message arriving from our partner. With 0.1 probability we
-        // lose it, otherwise schedule it for re-transmission.
-
-        if (uniform(0, 1) < 0.1) {
-            EV << "\"Losing\" message\n";
+    }
+    else {  // message from Tic arrived 
+        if (tictocMsg != nullptr) {
+            EV << "Dropping message - Toc is busy\n";
             delete msg;
         }
-        else {
-            // We remember message pointer in the tictocMsg variable, select random
-            // delay and schedule our self-message.
-            simtime_t delay = par("delayTime");
-            EV << "Message arrived, starting to wait " << delay << " secs...\n";
-            tictocMsg = msg;
-            scheduleAt(simTime() + delay, event);
+        else { // Toc is not busy
+            if (uniform(0, 1) < loseProb) {
+                EV << "\"Losing\" message.\n";
+                bubble("message lost");
+                delete msg;
+            }
+            else {  // received successfully
+                simtime_t delay = par("delayTime");
+                EV << "Wait before sending back for " << delay << " secs...\n";
+                scheduleAt(simTime() + delay, delayEvent);
+                tictocMsg = msg;
+            }
         }
     }
-    counter--;
 }
 

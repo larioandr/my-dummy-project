@@ -1,10 +1,6 @@
 simple Txc 
 {
     parameters:
-        bool sendMsgOnInit = default(false);  // whether the module should send 
-                                              // out a message on initialization
-        int limit = default(2);  // another parameter with a default value
-        volatile double delayTime @unit(s);  // processing duration
         @display("i=block/routing");  // add a default icon
     gates:
         input in;
@@ -15,14 +11,18 @@ simple Tic extends Txc
 {
     parameters:
         @display("i=,cyan");
-        sendMsgOnInit = true;
+        @class(Tic);
+        double timeout @unit(s) = default(3s);  // time to wait for a reply from Toc
+        int limit = default(2);  // a number of messages sent
 }
 
 simple Toc extends Txc
 {
     parameters:
         @display("i=,gold");
-        sendMsgOnInit = false;
+        @class(Toc);
+        double loseProb = default(0.1);  // a probability to lose the message
+        volatile double delayTime @unit(s);  // processing duration
 }
 
 //
