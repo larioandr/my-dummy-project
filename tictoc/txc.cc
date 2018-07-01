@@ -19,6 +19,12 @@ private:
     int counter;  // Note the counter here
     simtime_t  timeout;  // wait reply timeout duration
     cMessage *timeoutEvent;  // wait reply timeout event
+    cMessage *message;  // a message we are currently transmitting
+    int seq;  // message sequence number
+
+    cMessage *generateNewMessage();
+    void sendCopyOf(cMessage *msg);
+    bool checkMessagesLimit() const;
 };
 
 // The module class needs to be registered with OMNeT++
@@ -29,7 +35,7 @@ Tic::Tic()
     // Set the pointer to nullptr, so that the destructor won't crash
     // even if initialize() doesn't get called because of a runtime
     // error or user cancellation during the startup process.
-    timeoutEvent = nullptr;
+    timeoutEvent = message = nullptr;
 }
 
 Tic::~Tic()
@@ -45,18 +51,25 @@ void Tic::initialize()
     counter = par("limit");
     WATCH(counter);
 
+    // Initialize the sequence number
+    seq = 0;
+
     // Create the event object we'll use for timeout modeling.
     timeoutEvent = new cMessage("timeoutEvent");
 
-    // Generate and send initial message
-    EV << "Scheduling first send to t=5.0s\n";
-    cMessage *msg = new cMessage("tictocMsg");
-    send(msg, "out");
-    counter--;
+    if (checkMessagesLimit()) {
+        // Generate and send initial message
+        message = generateNewMessage();
+        sendCopyOf(message);
 
-    // Set wait timeout
-    timeout = par("timeout");
-    scheduleAt(simTime() + timeout, timeoutEvent);
+        // Set wait timeout
+        timeout = par("timeout");
+        scheduleAt(simTime() + timeout, timeoutEvent);
+
+        // Update the counter
+        counter--;
+    }
+
 }
 
 void Tic::handleMessage(cMessage *msg)
@@ -65,25 +78,51 @@ void Tic::handleMessage(cMessage *msg)
         // If we receive the timeout event, that means the packet hasn't
         // arrived in time and we have to re-send it.
         EV << "Timeout expired, resending message and restarting timer\n";
+        sendCopyOf(message);
+        scheduleAt(simTime() + timeout, timeoutEvent);
     }
     else { // message arrived
-        // Acknowledgement received -- delete the received message and cancel
-        // the timeout event
-        EV << "Timer cancelled\n";
-        cancelEvent(timeoutEvent);
+        // Acknowledgement received!
+        EV << "Received: " << msg->getName() << "\n";
         delete msg;
-    }
 
-    // Building new message, sending it and re-setting timeout event.
-    if (counter > 0) {
-        cMessage *newMsg = new cMessage("tictocMsg");
-        send(newMsg, "out");
-        scheduleAt(simTime() + timeout, timeoutEvent);
-        counter--;
+        // Also delete the stored message and cancel timeout event.
+        EV << "Timer cancelled.\n";
+        delete message;
+        cancelEvent(timeoutEvent);
+
+        // Ready to send another one.
+        if (checkMessagesLimit()) {
+            message = generateNewMessage();
+            EV << "Sending new message " << message->getName() << "\n";
+            sendCopyOf(message);
+            scheduleAt(simTime() + timeout, timeoutEvent);
+
+            // Update the counter
+            counter--;
+        }
     }
-    else { // counter reached zero
-        EV << "Counter reached zero.\n";
-    }
+}
+
+cMessage *Tic::generateNewMessage()
+{
+    // Generate a message with a different name every time.
+    char msgname[20];
+    sprintf(msgname, "tic-%d", ++seq);
+    cMessage *msg = new cMessage(msgname);
+    return msg;
+}
+
+void Tic::sendCopyOf(cMessage *msg)
+{
+    // Duplicate the message and send the copy.
+    cMessage *copy = (cMessage *)msg->dup();
+    send(copy, "out");
+}
+
+bool Tic::checkMessagesLimit() const
+{
+    return counter > 0;
 }
 
 /**
