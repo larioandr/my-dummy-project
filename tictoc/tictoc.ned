@@ -4,6 +4,7 @@ simple Txc
         bool sendMsgOnInit = default(false);  // whether the module should send 
                                               // out a message on initialization
         int limit = default(2);  // another parameter with a default value
+        volatile double delayTime @unit(s);  // processing duration
         @display("i=block/routing");  // add a default icon
     gates:
         input in;

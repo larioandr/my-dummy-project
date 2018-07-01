@@ -14,7 +14,7 @@ public:
     Txc();
     virtual ~Txc();
 protected:
-    // The following redefined virtual function holds the algorithm.
+    // The following redefined virtual functions holds the algorithm.
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
 private:
@@ -92,12 +92,21 @@ void Txc::handleMessage(cMessage *msg)
     } 
     else {
         // If the message we received is not our self-message, then it must be
-        // the tic-toc message arriving from our partner. We remember its
-        // pointer in the tictocMsg variable, then schedule our self-message
-        // to come back to us in 1s simulated time.
-        EV << "Message arrived, starting to wait 1 sec...\n";
-        tictocMsg = msg;
-        scheduleAt(simTime()+1.0, event);
+        // the tic-toc message arriving from our partner. With 0.1 probability we
+        // lose it, otherwise schedule it for re-transmission.
+
+        if (uniform(0, 1) < 0.1) {
+            EV << "\"Losing\" message\n";
+            delete msg;
+        }
+        else {
+            // We remember message pointer in the tictocMsg variable, select random
+            // delay and schedule our self-message.
+            simtime_t delay = par("delayTime");
+            EV << "Message arrived, starting to wait " << delay << " secs...\n";
+            tictocMsg = msg;
+            scheduleAt(simTime() + delay, event);
+        }
     }
     counter--;
 }
