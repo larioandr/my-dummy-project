@@ -3,38 +3,28 @@ simple Txc
     parameters:
         @display("i=block/routing");  // add a default icon
     gates:
-        input in;
-        output out;
+        input in[];
+        output out[];
 }
 
-simple Tic extends Txc 
-{
-    parameters:
-        @display("i=,cyan");
-        @class(Tic);
-        double timeout @unit(s) = default(3s);  // time to wait for a reply from Toc
-        int limit = default(2);  // a number of messages sent
-}
 
-simple Toc extends Txc
-{
-    parameters:
-        @display("i=,gold");
-        @class(Toc);
-        double loseProb = default(0.1);  // a probability to lose the message
-        volatile double delayTime @unit(s);  // processing duration
-}
-
-//
-// Two instances (tic and toc) of Txc1 connected both ways.
-// Tic and toc will pass messages to one another.
-//
 network Tictoc 
 {
     submodules:
-        tic: Tic;
-        toc: Toc;
+        tic[6]: Txc;
     connections:
-        tic.out --> { delay = 100ms; } --> toc.in;
-        tic.in <-- { delay = 100ms; } <-- toc.out;
+        tic[0].out++ --> { delay = 100ms; } --> tic[1].in++;
+        tic[0].in++ <-- { delay = 100ms; } <-- tic[1].out++;
+
+        tic[1].out++ --> { delay = 100ms; } --> tic[2].in++;
+        tic[1].in++ <-- { delay = 100ms; } <-- tic[2].out++;
+
+        tic[1].out++ --> { delay = 100ms; } --> tic[4].in++;
+        tic[1].in++ <-- { delay = 100ms; } <-- tic[4].out++;
+
+        tic[3].out++ --> { delay = 100ms; } --> tic[4].in++;
+        tic[3].in++ <-- { delay = 100ms; } <-- tic[4].out++;
+
+        tic[4].out++ --> { delay = 100ms; } --> tic[5].in++;
+        tic[4].in++ <-- { delay = 100ms; } <-- tic[5].out++;
 }
