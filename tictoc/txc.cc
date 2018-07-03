@@ -10,17 +10,28 @@ class Txc : public cSimpleModule {
     virtual void handleMessage(cMessage *msg) override;
     virtual void forwardMessage(TicTocMsg *msg);
     virtual TicTocMsg *generateMessage();
+    virtual void refreshDisplay() const override;
+  private:
+    long numSent;
+    long numReceived;
 };
 
 Define_Module(Txc);
 
 void Txc::initialize()
 {
+    numSent = 0;
+    WATCH(numSent);
+
+    numReceived = 0;
+    WATCH(numReceived);
+
     // Module 0 sends the first message
     if (getIndex() == 0) {
         // Boot the process scheduling the initial message as a self-message
         TicTocMsg *msg = generateMessage();
         forwardMessage(msg);
+        numSent++;
     }
 }
 
@@ -34,11 +45,13 @@ void Txc::handleMessage(cMessage *msg)
             << ttmsg->getHopCount() << " hops.\n";
         bubble("ARRIVED, starting new one!");
         delete ttmsg;
+        numReceived++;
 
         // Generate another one
         TicTocMsg *newmsg = generateMessage();
         EV << newmsg << endl;
         forwardMessage(newmsg);
+        numSent++;
     } else {
         // We are not the destination, just forward the message
         forwardMessage(ttmsg);
@@ -83,4 +96,11 @@ TicTocMsg *Txc::generateMessage()
     msg->setSource(src);
     msg->setDestination(dest);
     return msg;
+}
+
+void Txc::refreshDisplay() const
+{
+    char buf[40];
+    sprintf(buf, "rcvd: %ld sent: %ld", numReceived, numSent);
+    getDisplayString().setTagArg("t", 0, buf);
 }
