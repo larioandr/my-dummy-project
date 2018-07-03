@@ -8,12 +8,17 @@ class Txc : public cSimpleModule {
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
-    virtual void forwardMessage(TicTocMsg *msg);
-    virtual TicTocMsg *generateMessage();
+    virtual void finish() override;
+
     virtual void refreshDisplay() const override;
+
+    virtual TicTocMsg *generateMessage();
+    virtual void forwardMessage(TicTocMsg *msg);
   private:
     long numSent;
     long numReceived;
+    cHistogram hopCountStats;
+    cOutVector hopCountVector;
 };
 
 Define_Module(Txc);
@@ -26,10 +31,18 @@ void Txc::initialize()
     numReceived = 0;
     WATCH(numReceived);
 
+    hopCountStats.setName("hopCountStats");
+    hopCountStats.setRange(0, NAN);
+    hopCountStats.setNumPrecollectedValues(10);
+    hopCountStats.setRangeExtensionFactor(1.5);
+    hopCountVector.setName("HopCount");
+
     // Module 0 sends the first message
     if (getIndex() == 0) {
         // Boot the process scheduling the initial message as a self-message
+        EV << "Generating initial message: ";
         TicTocMsg *msg = generateMessage();
+        EV << msg << endl;
         forwardMessage(msg);
         numSent++;
     }
@@ -40,20 +53,27 @@ void Txc::handleMessage(cMessage *msg)
     TicTocMsg *ttmsg = check_and_cast<TicTocMsg*>(msg);
 
     if (ttmsg->getDestination() == getIndex()) {
-        // Message arrived at its destination
-        EV << "Message " << ttmsg << " arrived after " 
-            << ttmsg->getHopCount() << " hops.\n";
+        // Message arrived at its destination.
+        int hopcount = ttmsg->getHopCount();
+        EV << "Message " << ttmsg << " arrived after " << hopcount << " hops.\n";
         bubble("ARRIVED, starting new one!");
-        delete ttmsg;
+
+        // Update statistics.
         numReceived++;
+        hopCountVector.record(hopcount);
+        hopCountStats.collect(hopcount);
+
+        // Destroy the delivered message.
+        delete ttmsg;
 
         // Generate another one
+        EV << "Generating another message: ";
         TicTocMsg *newmsg = generateMessage();
         EV << newmsg << endl;
         forwardMessage(newmsg);
         numSent++;
     } else {
-        // We are not the destination, just forward the message
+        // We are not the destination, just forward the message.
         forwardMessage(ttmsg);
     }
 }
@@ -103,4 +123,19 @@ void Txc::refreshDisplay() const
     char buf[40];
     sprintf(buf, "rcvd: %ld sent: %ld", numReceived, numSent);
     getDisplayString().setTagArg("t", 0, buf);
+}
+
+void Txc::finish()
+{
+    EV << "Sent:              " << numSent << endl;
+    EV << "Received:          " << numReceived << endl;
+    EV << "Hop count, min:    " << hopCountStats.getMin() << endl;
+    EV << "Hop count, max:    " << hopCountStats.getMax() << endl;
+    EV << "Hop count, mean:   " << hopCountStats.getMean() << endl;
+    EV << "Hop count, stddev: " << hopCountStats.getStddev() << endl;
+
+    recordScalar("#sent", numSent);
+    recordScalar("#received", numReceived);
+
+    hopCountStats.recordAs("hop count");
 }
