@@ -1,6 +1,6 @@
 out/
 /tictoc
-
 *envrc
 results/
 *.swp
+*_m.[hc]*

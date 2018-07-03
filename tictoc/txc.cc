@@ -1,5 +1,6 @@
 #include <string.h>
 #include <omnetpp.h>
+#include "tictoc_m.h"
 
 using namespace omnetpp;
 
@@ -7,8 +8,8 @@ class Txc : public cSimpleModule {
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
-    virtual void forwardMessage(cMessage *msg);
-    virtual cMessage *generateMessage();
+    virtual void forwardMessage(TicTocMsg *msg);
+    virtual TicTocMsg *generateMessage();
 };
 
 Define_Module(Txc);
@@ -18,24 +19,37 @@ void Txc::initialize()
     // Module 0 sends the first message
     if (getIndex() == 0) {
         // Boot the process scheduling the initial message as a self-message
-        cMessage *msg = generateMessage();
-        EV << "built initial message `" << msg->getName() << "'\n";
+        TicTocMsg *msg = generateMessage();
         forwardMessage(msg);
     }
 }
 
 void Txc::handleMessage(cMessage *msg)
 {
-    if (getIndex() == 3) {
-        EV << "reached Tic[" << getIndex() << "], delete message\n";
-        delete msg;
+    TicTocMsg *ttmsg = check_and_cast<TicTocMsg*>(msg);
+
+    if (ttmsg->getDestination() == getIndex()) {
+        // Message arrived at its destination
+        EV << "Message " << ttmsg << " arrived after " 
+            << ttmsg->getHopCount() << " hops.\n";
+        bubble("ARRIVED, starting new one!");
+        delete ttmsg;
+
+        // Generate another one
+        TicTocMsg *newmsg = generateMessage();
+        EV << newmsg << endl;
+        forwardMessage(newmsg);
     } else {
-        forwardMessage(msg);
+        // We are not the destination, just forward the message
+        forwardMessage(ttmsg);
     }
 }
 
-void Txc::forwardMessage(cMessage *msg)
+void Txc::forwardMessage(TicTocMsg *msg)
 {
+    // Increment hop count.
+    msg->setHopCount(msg->getHopCount() + 1);
+
     // In this example we just pick a random gate to send msg on.
     // We draw a random number between 0 and the size of gate `gate[]'.
     int n = gateSize("gate");
@@ -52,7 +66,21 @@ void Txc::forwardMessage(cMessage *msg)
     send(msg, "gate$o", k);
 }
 
-cMessage *Txc::generateMessage()
+TicTocMsg *Txc::generateMessage()
 {
-    return new cMessage("tictocMsg");
+    // Produce source and destination addresses.
+    int src = getIndex();  // our module index
+    int n = getVectorSize();  // module vector size
+    int dest = intuniform(0, n-2);
+    if (dest >= src) {
+        dest++;
+    }
+
+    char msgname[20];
+    sprintf(msgname, "tic-%d-%d", src, dest);
+
+    TicTocMsg *msg = new TicTocMsg(msgname);
+    msg->setSource(src);
+    msg->setDestination(dest);
+    return msg;
 }
