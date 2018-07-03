@@ -37,19 +37,19 @@ void Txc::handleMessage(cMessage *msg)
 void Txc::forwardMessage(cMessage *msg)
 {
     // In this example we just pick a random gate to send msg on.
-    // We draw a random number between 0 and the size of gate `out[]'.
-    int n = gateSize("out");
+    // We draw a random number between 0 and the size of gate `gate[]'.
+    int n = gateSize("gate");
     int k;
 
-    if (msg->getArrivalGate() && gateSize("out") > 1) {
+    if (msg->getArrivalGate() && gateSize("gate") > 1) {
         k = intuniform(0, n-2);
         k = k < msg->getArrivalGate()->getIndex() ? k : k + 1;
     } else {
         k = intuniform(0, n-1);
     }
 
-    EV << "Forwarding message " << msg << " on port out[" << k << "]\n";
-    send(msg, "out", k);
+    EV << "Forwarding message " << msg << " on port gate[" << k << "]\n";
+    send(msg, "gate$o", k);
 }
 
 cMessage *Txc::generateMessage()
