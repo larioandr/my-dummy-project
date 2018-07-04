@@ -6,10 +6,10 @@ using namespace omnetpp;
 
 class Txc : public cSimpleModule {
   protected:
-    virtual void initialize() override;
-    virtual void handleMessage(cMessage *msg) override;
+    virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
 
-    virtual void refreshDisplay() const override;
+    virtual void refreshDisplay() const;
 
     virtual TicTocMsg *generateMessage();
     virtual void forwardMessage(TicTocMsg *msg);
