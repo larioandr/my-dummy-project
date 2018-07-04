@@ -51,6 +51,7 @@ void Txc::handleMessage(cMessage *msg)
         int hopcount = ttmsg->getHopCount();
         EV << "Message " << ttmsg << " arrived after " << hopcount << " hops.\n";
         bubble("ARRIVED, starting new one!");
+        numReceived++;
 
         // Send a signal to update statistic
         emit(arrivalSignal, hopcount);
@@ -64,6 +65,17 @@ void Txc::handleMessage(cMessage *msg)
         EV << newmsg << endl;
         forwardMessage(newmsg);
         numSent++;
+
+        if (hasGUI()) {
+            char label[50];
+            // Write last hop count to string
+            sprintf(label, "last hopCount = %d", hopcount);
+            // Get pointer to figure
+            cCanvas *canvas = getParentModule()->getCanvas();
+            cTextFigure *textFigure = check_and_cast<cTextFigure*>(canvas->getFigure("lasthopcount"));
+            // Update figure text
+            textFigure->setText(label);
+        }
     } else {
         // We are not the destination, just forward the message.
         forwardMessage(ttmsg);

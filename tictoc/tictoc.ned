@@ -11,6 +11,10 @@ simple Txc
 
 network Tictoc 
 {
+    parameters:
+        @figure[description](type=text; pos=5,20; font=,,bold;
+            text="Random routing example - displaying last hop count");
+        @figure[lasthopcount](type=text; pos=5,35; text="last hopCount: N/A");
     types:
         channel Channel extends ned.DelayChannel {
             delay = 100ms;
