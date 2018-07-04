@@ -4,3 +4,7 @@ out/
 results/
 *.swp
 *_m.[hc]*
+.cproject
+.oppbuildspec
+.project
+.settings
