@@ -8,3 +8,6 @@ results/
 .oppbuildspec
 .project
 .settings
+/.computed/
+*_dbg
+*.anf
