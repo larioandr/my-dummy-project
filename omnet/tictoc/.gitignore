@@ -1,0 +1,14 @@
+out/
+/tictoc
+*envrc
+results/
+*.swp
+*_m.[hc]*
+.cproject
+.oppbuildspec
+.project
+.settings
+/.computed/
+*_dbg
+*.anf
+.cmdenv-log
