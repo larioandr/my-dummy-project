@@ -8,7 +8,6 @@ class Txc : public cSimpleModule {
   protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage *msg) override;
-    virtual void finish() override;
 
     virtual void refreshDisplay() const override;
 
@@ -17,8 +16,7 @@ class Txc : public cSimpleModule {
   private:
     long numSent;
     long numReceived;
-    cHistogram hopCountStats;
-    cOutVector hopCountVector;
+    simsignal_t arrivalSignal;
 };
 
 Define_Module(Txc);
@@ -31,11 +29,7 @@ void Txc::initialize()
     numReceived = 0;
     WATCH(numReceived);
 
-    hopCountStats.setName("hopCountStats");
-    hopCountStats.setRange(0, NAN);
-    hopCountStats.setNumPrecollectedValues(10);
-    hopCountStats.setRangeExtensionFactor(1.5);
-    hopCountVector.setName("HopCount");
+    arrivalSignal = registerSignal("arrival");
 
     // Module 0 sends the first message
     if (getIndex() == 0) {
@@ -58,10 +52,8 @@ void Txc::handleMessage(cMessage *msg)
         EV << "Message " << ttmsg << " arrived after " << hopcount << " hops.\n";
         bubble("ARRIVED, starting new one!");
 
-        // Update statistics.
-        numReceived++;
-        hopCountVector.record(hopcount);
-        hopCountStats.collect(hopcount);
+        // Send a signal to update statistic
+        emit(arrivalSignal, hopcount);
 
         // Destroy the delivered message.
         delete ttmsg;
@@ -125,17 +117,3 @@ void Txc::refreshDisplay() const
     getDisplayString().setTagArg("t", 0, buf);
 }
 
-void Txc::finish()
-{
-    EV << "Sent:              " << numSent << endl;
-    EV << "Received:          " << numReceived << endl;
-    EV << "Hop count, min:    " << hopCountStats.getMin() << endl;
-    EV << "Hop count, max:    " << hopCountStats.getMax() << endl;
-    EV << "Hop count, mean:   " << hopCountStats.getMean() << endl;
-    EV << "Hop count, stddev: " << hopCountStats.getStddev() << endl;
-
-    recordScalar("#sent", numSent);
-    recordScalar("#received", numReceived);
-
-    hopCountStats.recordAs("hop count");
-}

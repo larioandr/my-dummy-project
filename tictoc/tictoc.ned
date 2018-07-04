@@ -1,6 +1,8 @@
 simple Txc 
 {
     parameters:
+        @signal[arrival](type="long");
+        @statistic[hopCount](title="hop count"; source="arrival"; record=vector,stats; interpolationmode=none);
         @display("i=block/routing");  // add a default icon
     gates:
         inout gate[];
