@@ -1,5 +1,5 @@
 My dummy project
 ================
 
-<img src="https://www.codefactor.io/repository/github/larioandr/my-dummy-project/badge"/>
+[![CodeFactor](https://www.codefactor.io/repository/github/larioandr/sandbox/badge/master)](https://www.codefactor.io/repository/github/larioandr/sandbox/overview/master)
 
