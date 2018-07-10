@@ -9,7 +9,7 @@ simple Txc
 }
 
 
-network Tictoc 
+network TutorialNetwork
 {
     parameters:
         @figure[description](type=text; pos=5,20; font=,,bold;
@@ -27,4 +27,22 @@ network Tictoc
         tic[1].gate++ <--> Channel <--> tic[4].gate++;
         tic[3].gate++ <--> Channel <--> tic[4].gate++;
         tic[4].gate++ <--> Channel <--> tic[5].gate++;
+}
+
+
+network WheelNetwork
+{
+    parameters:
+        int size;
+    types:
+        channel Channel extends ned.DelayChannel {
+            delay = 5ms;
+        }
+    submodules:
+        tic[size + 1]: Txc;
+    connections:
+        for i=1..size {
+            tic[0].gate++ <--> Channel <--> tic[i].gate++;
+            tic[i].gate++ <--> Channel <--> tic[i-1].gate++;
+        }
 }

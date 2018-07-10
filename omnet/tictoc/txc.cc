@@ -72,9 +72,11 @@ void Txc::handleMessage(cMessage *msg)
             sprintf(label, "last hopCount = %d", hopcount);
             // Get pointer to figure
             cCanvas *canvas = getParentModule()->getCanvas();
-            cTextFigure *textFigure = check_and_cast<cTextFigure*>(canvas->getFigure("lasthopcount"));
-            // Update figure text
-            textFigure->setText(label);
+            if (canvas->getFigure("lasthopcount")) {
+                cTextFigure *textFigure = check_and_cast<cTextFigure*>(canvas->getFigure("lasthopcount"));
+                // Update figure text
+                textFigure->setText(label);
+            }
         }
     } else {
         // We are not the destination, just forward the message.
