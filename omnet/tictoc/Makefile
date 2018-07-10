@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for tictoc
 #
 # This file was generated with the command:
-#  opp_makemake -f
+#  opp_makemake
 #
 
 # Name of target to be created (-o option)

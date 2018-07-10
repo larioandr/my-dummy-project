@@ -12,3 +12,4 @@ results/
 *_dbg
 *.anf
 .cmdenv-log
+work/
