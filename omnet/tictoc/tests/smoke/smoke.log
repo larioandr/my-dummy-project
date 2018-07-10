@@ -1,0 +1,56 @@
+################################################################################
+$ cd ../../
+$ ./tictoc -u Cmdenv --cmdenv-express-mode=false --vector-recording=false --scalar-recording=false --result-dir=/Users/andrey/workspace/github-sandbox/omnet/tictoc/tests/smoke/results -c TutorialNetwork -n . --cpu-time-limit=5ms
+
+<!> CPU time limit reached -- at t=50.3s, event #503
+
+* simulated time: 50.3
+* cpu time limit: 5ms
+* elapsed time  : 0.05626381398178637
+* num of events : 503
+* exit code     : 0
+
+[+] SUCCESS
+
+################################################################################
+$ cd ../../
+$ ./tictoc -u Cmdenv --cmdenv-express-mode=false --vector-recording=false --scalar-recording=false --result-dir=/Users/andrey/workspace/github-sandbox/omnet/tictoc/tests/smoke/results -c WheelNetwork-4 -n . --cpu-time-limit=5ms
+
+<!> Error: No such config: WheelNetwork-4
+
+* simulated time: 0s
+* cpu time limit: 5ms -- not reached
+* elapsed time  : 0.03797311999369413
+* num of events : 0
+* exit code     : 1
+
+[-] FAILURE
+
+################################################################################
+$ cd ../../
+$ ./tictoc -u Cmdenv --cmdenv-express-mode=false --vector-recording=false --scalar-recording=false --result-dir=/Users/andrey/workspace/github-sandbox/omnet/tictoc/tests/smoke/results -c TutorialNetwork -n . --cpu-time-limit=5ms
+
+<!> CPU time limit reached -- at t=50.4s, event #504
+
+* simulated time: 50.4
+* cpu time limit: 5ms
+* elapsed time  : 0.05714074202114716
+* num of events : 504
+* exit code     : 0
+
+[+] SUCCESS
+
+################################################################################
+$ cd ../../
+$ ./tictoc -u Cmdenv --cmdenv-express-mode=false --vector-recording=false --scalar-recording=false --result-dir=/Users/andrey/workspace/github-sandbox/omnet/tictoc/tests/smoke/results -c WheelNetwork-5 -n . --cpu-time-limit=5ms
+
+<!> CPU time limit reached -- at t=2.36s, event #472
+
+* simulated time: 2.36
+* cpu time limit: 5ms
+* elapsed time  : 0.057905122986994684
+* num of events : 472
+* exit code     : 0
+
+[+] SUCCESS
+
