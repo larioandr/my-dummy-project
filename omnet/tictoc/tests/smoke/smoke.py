@@ -15,9 +15,9 @@ import copy
 import io
 
 
-ROOT_PATH = os.path.join('..', '..')  # path to the project root
-SHARED_LIBRARY = None  # None if testing against an executable, or library name
-EXECUTABLE = 'tictoc'  # None if testing against a library, or executable name
+ROOT_PATH = os.path.join('..', '..', 'src')  # path to the project root
+SHARED_LIBRARY = 'tictoc'  # None if testing against an executable, or library name
+EXECUTABLE = None  # None if testing against a library, or executable name
 PATH_SEPARATOR = ";" if sys.platform == 'win32' else ':'
 PWD = os.path.dirname(os.path.abspath(__file__))  # path of this file
 NED_PATHS = ['.',]
@@ -28,7 +28,7 @@ LOG_FILE_NAME = 'smoke.log'
 
 def which_executable():
     if SHARED_LIBRARY and not EXECUTABLE:
-        return 'opp_run'
+        return 'opp_run_dbg'
     elif not SHARED_LIBRARY and EXECUTABLE:
         return os.path.join('.', EXECUTABLE)
     else:
@@ -65,8 +65,10 @@ def simulate(spec, cpu_time_limit, log_file):
         f'-n {PATH_SEPARATOR.join(NED_PATHS)}',
         f'--cpu-time-limit={cpu_time_limit}',
     ]
-    command = " ".join(args)
     path = os.path.join(ROOT_PATH, spec.path)
+    if SHARED_LIBRARY:
+        args.append(f'-l {SHARED_LIBRARY}')
+    command = " ".join(args)
 
     # Running the simulation
     start_time = time.perf_counter()
