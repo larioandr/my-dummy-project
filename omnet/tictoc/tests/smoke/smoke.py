@@ -38,16 +38,16 @@ def which_executable():
 
 
 SimResult = collections.namedtuple(
-    'SimResult', 
+    'SimResult',
     (
-        'exitcode', 'command', 'path', 'error_msg', 'simulated_time', 
+        'exitcode', 'command', 'path', 'error_msg', 'simulated_time',
         'elapsed_time', 'cpu_time', 'cpu_time_limit_reached', 'num_events',
     )
 )
 
 
 SimSpec = collections.namedtuple(
-    'SimSpec', 
+    'SimSpec',
     ('path', 'config_name', 'args', 'file_name', 'line_number', 'line')
 )
 
@@ -68,14 +68,13 @@ def simulate(spec, cpu_time_limit, log_file):
     path = os.path.join(ROOT_PATH, spec.path)
     if SHARED_LIBRARY:
         args.append(f'-l {SHARED_LIBRARY}')
-    command = " ".join(args)
+    command = " ".join(args)    
 
     # Running the simulation
     start_time = time.perf_counter()
     process = subprocess.Popen(
-        command,
+        shlex.split(command),
         cwd=path,
-        shell=True,
         stdout=subprocess.PIPE,    # we wouldn't like to flood the console
         stderr=subprocess.STDOUT,  # join both streams
         universal_newlines=True,   # we don't want to decode the stream
@@ -212,7 +211,7 @@ class ThreadedTestSuite(unittest.BaseTestSuite):
 
         threads = []
 
-        for i in range(self.thread_count):
+        for _ in range(self.thread_count):
             # Create self.thread_count number of threads that together will
             # cooperate removing every ip in the list. Each thread will do the
             # job as fast as it can.
@@ -256,13 +255,8 @@ class ThreadedTestResult(unittest.TestResult):
         ret.parent = self
         return ret
 
-    def stop():
-        super(ThreadedTestResult, self).stop()
-        if self.parent:
-            self.parent.stop()
-
     def stopThread(self):
-        if self.parent == None:
+        if self.parent is None:
             return 0
         self.parent.testsRun += self.testsRun
         return 1
@@ -303,8 +297,7 @@ class SimulationTextTestResult(ThreadedTestResult):
         doc_first_line = test.shortDescription()
         if self.descriptions and doc_first_line:
             return '\n'.join((str(test), doc_first_line))
-        else:
-            return str(test)
+        return str(test)
 
     def startTest(self, test):
         super(SimulationTextTestResult, self).startTest(test)
