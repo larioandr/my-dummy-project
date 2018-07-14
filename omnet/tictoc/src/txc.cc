@@ -42,7 +42,6 @@ void Txc::initialize()
         TicTocMsg *msg = generateMessage();
         EV << msg << endl;
         forwardMessage(msg);
-        
         numSent++;
         emit(numSentSignal, numSent);
     }
@@ -57,7 +56,6 @@ void Txc::handleMessage(cMessage *msg)
         int hopcount = ttmsg->getHopCount();
         EV << "Message " << ttmsg << " arrived after " << hopcount << " hops.\n";
         bubble("ARRIVED, starting new one!");
-        
         numReceived++;
         emit(numReceivedSignal, numReceived);
 
@@ -72,7 +70,6 @@ void Txc::handleMessage(cMessage *msg)
         TicTocMsg *newmsg = generateMessage();
         EV << newmsg << endl;
         forwardMessage(newmsg);
-        
         numSent++;
         emit(numSentSignal, numSent);
 
