@@ -4,7 +4,20 @@ simple Txc
 {
     parameters:
         @signal[arrival](type="long");
-        @statistic[hopCount](title="hop count"; source="arrival"; record=vector,stats,timeavg,min,max,avg; interpolationmode=none);
+        @statistic[hopCount](
+            title="hop count"; source="arrival"; 
+            record=vector,stats,timeavg,min,max,avg; interpolationmode=none);
+        
+        @signal[numSent](type="long");
+        @statistic[numSent](
+            title="number of sent packets"; source="numSent"; 
+            record=last);
+        
+        @signal[numReceived](type="long");
+        @statistic[numReceived](
+            title="number of received packets"; source="numReceived"; 
+            record=last);
+
         @display("i=block/routing");  // add a default icon
     gates:
         inout gate[];
