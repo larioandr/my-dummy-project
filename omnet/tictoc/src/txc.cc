@@ -17,6 +17,8 @@ class Txc : public cSimpleModule {
     long numSent;
     long numReceived;
     simsignal_t arrivalSignal;
+    simsignal_t numSentSignal;
+    simsignal_t numReceivedSignal;
 };
 
 Define_Module(Txc);
@@ -30,6 +32,8 @@ void Txc::initialize()
     WATCH(numReceived);
 
     arrivalSignal = registerSignal("arrival");
+    numSentSignal = registerSignal("numSent");
+    numReceivedSignal = registerSignal("numReceived");
 
     // Module 0 sends the first message
     if (getIndex() == 0) {
@@ -39,6 +43,7 @@ void Txc::initialize()
         EV << msg << endl;
         forwardMessage(msg);
         numSent++;
+        emit(numSentSignal, numSent);
     }
 }
 
@@ -52,6 +57,7 @@ void Txc::handleMessage(cMessage *msg)
         EV << "Message " << ttmsg << " arrived after " << hopcount << " hops.\n";
         bubble("ARRIVED, starting new one!");
         numReceived++;
+        emit(numReceivedSignal, numReceived);
 
         // Send a signal to update statistic
         emit(arrivalSignal, hopcount);
@@ -65,6 +71,7 @@ void Txc::handleMessage(cMessage *msg)
         EV << newmsg << endl;
         forwardMessage(newmsg);
         numSent++;
+        emit(numSentSignal, numSent);
 
         if (hasGUI()) {
             char label[50];
@@ -72,9 +79,11 @@ void Txc::handleMessage(cMessage *msg)
             sprintf(label, "last hopCount = %d", hopcount);
             // Get pointer to figure
             cCanvas *canvas = getParentModule()->getCanvas();
-            cTextFigure *textFigure = check_and_cast<cTextFigure*>(canvas->getFigure("lasthopcount"));
-            // Update figure text
-            textFigure->setText(label);
+            if (canvas->getFigure("lasthopcount")) {
+                cTextFigure *textFigure = check_and_cast<cTextFigure*>(canvas->getFigure("lasthopcount"));
+                // Update figure text
+                textFigure->setText(label);
+            }
         }
     } else {
         // We are not the destination, just forward the message.

@@ -12,3 +12,7 @@ results/
 *_dbg
 *.anf
 .cmdenv-log
+work/
+__pycache__
+.vscode
+*.log

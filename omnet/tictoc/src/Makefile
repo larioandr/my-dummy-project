@@ -1,12 +1,22 @@
 #
-# OMNeT++/OMNEST Makefile for tictoc
+# OMNeT++/OMNEST Makefile for $(LIB_PREFIX)tictoc
 #
 # This file was generated with the command:
-#  opp_makemake -f -n -d src
+#  opp_makemake -s -f --mode debug -o tictoc
 #
+
+# Name of target to be created (-o option)
+TARGET = $(LIB_PREFIX)tictoc$(D)$(SHARED_LIB_SUFFIX)
+TARGET_DIR = .
 
 # C++ include paths (with -I)
 INCLUDE_PATH =
+
+# Additional object and library files to link with
+EXTRA_OBJS =
+
+# Additional libraries (-L, -l options)
+LIBS =
 
 # Output directory
 PROJECT_OUTPUT_DIR = out
@@ -14,13 +24,19 @@ PROJECTRELATIVE_PATH =
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
-OBJS =
+OBJS = $O/txc.o $O/tictoc_m.o
 
 # Message files
-MSGFILES =
+MSGFILES = \
+    tictoc.msg
 
 # SM files
 SMFILES =
+
+# Default mode (-M option); can be overridden with make MODE=debug (or =release)
+ifndef MODE
+MODE = debug
+endif
 
 #------------------------------------------------------------------------------
 
@@ -42,6 +58,9 @@ endif
 
 include $(CONFIGFILE)
 
+# Simulation kernel and user interface libraries
+OMNETPP_LIBS = -loppenvir$D $(KERNEL_LIBS) $(SYS_LIBS)
+
 COPTS = $(CFLAGS) $(IMPORT_DEFINES)  $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)
 MSGCOPTS = $(INCLUDE_PATH)
 SMCOPTS =
@@ -61,6 +80,7 @@ endif
 #------------------------------------------------------------------------------
 
 # Main target
+all: $(TARGET_DIR)/$(TARGET)
 
 $(TARGET_DIR)/% :: $O/%
 	@mkdir -p $(TARGET_DIR)
@@ -69,16 +89,13 @@ ifeq ($(TOOLCHAIN_NAME),clangc2)
 	$(Q)-$(LN) $(<:%.dll=%.lib) $(@:%.dll=%.lib)
 endif
 
-all: $(OBJS) submakedirs Makefile $(CONFIGFILE)
-	@# Do nothing
+$O/$(TARGET): $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile $(CONFIGFILE)
+	@$(MKPATH) $O
+	@echo Creating shared library: $@
+	$(Q)$(SHLIB_LD) -o $O/$(TARGET) $(OBJS) $(EXTRA_OBJS) $(AS_NEEDED_OFF) $(WHOLE_ARCHIVE_ON) $(LIBS) $(WHOLE_ARCHIVE_OFF) $(OMNETPP_LIBS) $(LDFLAGS)
+	$(Q)$(SHLIB_POSTPROCESS) $O/$(TARGET)
 
-submakedirs:  src_dir
-
-.PHONY: all clean cleanall depend msgheaders smheaders  src
-src: src_dir
-
-src_dir:
-	cd src && $(MAKE) all
+.PHONY: all clean cleanall depend msgheaders smheaders
 
 .SUFFIXES: .cc
 
@@ -96,16 +113,15 @@ $O/%.o: %.cc $(COPTS_FILE) | msgheaders smheaders
 	$(Q)$(SMC) -c++ -suffix cc $(SMCOPTS) $?
 
 msgheaders: $(MSGFILES:.msg=_m.h)
-	$(Q)cd src && $(MAKE) msgheaders
 
 smheaders: $(SMFILES:.sm=_sm.h)
-	$(Q)cd src && $(MAKE) smheaders
 
 clean:
 	$(qecho) Cleaning $(TARGET)
 	$(Q)-rm -rf $O
+	$(Q)-rm -f $(TARGET_DIR)/$(TARGET)
+	$(Q)-rm -f $(TARGET_DIR)/$(TARGET:%.dll=%.lib)
 	$(Q)-rm -f $(call opp_rwildcard, . , *_m.cc *_m.h *_sm.cc *_sm.h)
-	-$(Q)cd src && $(MAKE) clean
 
 cleanall:
 	$(Q)$(MAKE) -s clean MODE=release

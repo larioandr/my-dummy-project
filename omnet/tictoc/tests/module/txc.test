@@ -1,0 +1,68 @@
+%description:
+Run the TicToc network
+
+%file: package.ned
+package tictoc.test;
+
+%file: TxcTest.ned
+package tictoc.test;
+
+import tictoc.Txc;
+
+simple Receiver {
+    gates:
+        inout gate;
+}
+
+network TxcTestNetwork {
+    submodules:
+        txc[1]: Txc;
+        receiver: Receiver;
+    connections:
+        txc.gate++ <--> { delay = 50ms; } <--> receiver.gate;
+}
+
+%file: Receiver.cc
+#include <omnetpp.h>
+#include "tictoc_m.h"
+
+using namespace omnetpp;
+
+class Receiver : public cSimpleModule {
+  public:
+    Receiver() : cSimpleModule(16 * 1024) {}
+  protected:
+    void activity() {
+        // 1) Receive a message, check it is a TicTocMsg, print its
+        //    source and hop count
+        auto msg = receive();
+        auto tic = check_and_cast<TicTocMsg*>(msg);
+        EV << "(1) tic.src: " << tic->getSource() << endl;
+        EV << "(1) tic.hopcount: " << tic->getHopCount() << endl;            
+
+        // Set the destination to 100, increase hop count and forward
+        tic->setHopCount(tic->getHopCount() + 1);
+        tic->setDestination(100);
+        send(tic, "gate$o");
+
+        // 2) Receive a message once more, check its type and print its
+        //    hop count and destination.
+        msg = receive();
+        tic = check_and_cast<TicTocMsg*>(msg);
+        EV << "(2) tic.dst: " << tic->getDestination() << endl;
+        EV << "(2) tic.hopcount: " << tic->getHopCount() << endl;
+
+        delete tic;
+    }
+};
+Define_Module(Receiver);
+
+%network: tictoc.test.TxcTestNetwork
+
+%contains: stdout
+(1) tic.src: 0
+(1) tic.hopcount: 1
+
+%contains: stdout
+(2) tic.dst: 100
+(2) tic.hopcount: 3

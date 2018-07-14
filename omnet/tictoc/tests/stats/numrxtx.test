@@ -1,0 +1,99 @@
+%#------------------------------------------------------------------------------
+%description:
+%#------------------------------------------------------------------------------
+We create a network similiar to the one from tutorial, launch it and make sure
+that the number of receptions and transmissions in any station differ only by 
+one at most.
+
+%#------------------------------------------------------------------------------
+%file: test.ned
+%#------------------------------------------------------------------------------
+import tictoc.Txc;
+
+network TxcTest
+{
+    types:
+        channel Channel extends ned.DelayChannel 
+        {
+            delay = 100ms;
+        }
+    submodules:
+        tic[6]: Txc;
+    connections:
+        tic[0].gate++ <--> Channel <--> tic[1].gate++;
+        tic[1].gate++ <--> Channel <--> tic[2].gate++;
+        tic[1].gate++ <--> Channel <--> tic[4].gate++;
+        tic[3].gate++ <--> Channel <--> tic[4].gate++;
+        tic[4].gate++ <--> Channel <--> tic[5].gate++;
+}
+
+%#------------------------------------------------------------------------------
+%inifile: omnetpp.ini
+%#------------------------------------------------------------------------------
+[General]
+network = TxcTest
+sim-time-limit = 100s
+**.vector-recording = false
+
+
+%#------------------------------------------------------------------------------
+%file: analyze.py
+%#------------------------------------------------------------------------------
+import pandas as pd
+import numpy as np
+import subprocess
+
+# Since different rows may contain values of various types in some columns, we 
+# need a more advanced way of loading the data. We will use these two helpers:
+def parse_if_number(s):
+    try:
+        return float(s)
+    except:
+        return True if s == 'true' else (
+            False if s == 'false' else s if s else None
+        )
+
+def parse_ndarray(s):
+    return np.fromstring(s, sep=' ') if s else None
+
+
+if __name__ == '__main__':
+    subprocess.run(
+        'scavetool x -o results/results.csv results/*.sca', 
+        shell=True
+    )
+
+    # We read CSV with parsing vectors where possible and casting 'attrvalue' 
+    # column to the appropriate type:
+    data = pd.read_csv('results/results.csv', converters={
+        'attrvalue': parse_if_number,
+        'binedges': parse_ndarray,
+        'binvalues': parse_ndarray,
+        'vectime': parse_ndarray,
+        'vecvalue': parse_ndarray,
+    })
+
+    # Extract scalars from data
+    scalars = data[data.type=='scalar']
+
+    # Now we want to extract numSent and numReceived scalars and print them
+    num_sent = scalars[scalars.name=='numSent:last']
+    num_received = scalars[scalars.name=='numReceived:last']
+    for i in range(6):
+        module_name = f'TxcTest.tic[{i}]'
+        tx = int(num_sent[num_sent.module==module_name].value)
+        rx = int(num_received[num_received.module==module_name].value)
+        delta = tx - rx
+        print(f"tic[{i}] RX:{rx} TX:{tx} DELTA:{tx-rx}")
+
+
+%#------------------------------------------------------------------------------
+%postrun-command: python analyze.py
+%#------------------------------------------------------------------------------
+%contains-regex: postrun-command(1).out
+tic\[0\] RX:\d+ TX:\d+ DELTA:-?[01]
+tic\[1\] RX:\d+ TX:\d+ DELTA:-?[01]
+tic\[2\] RX:\d+ TX:\d+ DELTA:-?[01]
+tic\[3\] RX:\d+ TX:\d+ DELTA:-?[01]
+tic\[4\] RX:\d+ TX:\d+ DELTA:-?[01]
+tic\[5\] RX:\d+ TX:\d+ DELTA:-?[01]
